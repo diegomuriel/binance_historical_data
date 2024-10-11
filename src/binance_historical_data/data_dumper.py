@@ -135,28 +135,41 @@ class BinanceDataDumper:
         LOGGER.info("---> End Date: %s", date_end.strftime("%Y%m%d"))
         date_end_first_day_of_month = datetime.date(
             year=date_end.year, month=date_end.month, day=1)
+        date_end_last_day_of_month = date_end_first_day_of_month + relativedelta(
+            months=1) - relativedelta(days=1)
         for ticker in tqdm(list_trading_pairs, leave=True, desc="Tickers"):
             # 1) Download all monthly data
             if self._data_type != "metrics" and (date_end_first_day_of_month - relativedelta(days=1) > date_start):
-                self._download_data_for_1_ticker(
-                    ticker=ticker,
-                    date_start=date_start,
-                    date_end=(date_end_first_day_of_month - relativedelta(days=1)),
-                    timeperiod_per_file="monthly",
-                    is_to_update_existing=is_to_update_existing,
-                )
+                if date_end != date_end_last_day_of_month:
+                    self._download_data_for_1_ticker(
+                        ticker=ticker,
+                        date_start=date_start,
+                        date_end=(date_end_first_day_of_month - relativedelta(days=1)),
+                        timeperiod_per_file="monthly",
+                        is_to_update_existing=is_to_update_existing,
+                    )
+                else:
+                    self._download_data_for_1_ticker(
+                        ticker=ticker,
+                        date_start=date_start,
+                        date_end=(date_end_last_day_of_month),
+                        timeperiod_per_file="monthly",
+                        is_to_update_existing=is_to_update_existing,
+                    )
             # 2) Download all daily date
             if self._data_type == "metrics":
                 date_start_daily = date_start
             else:
                 date_start_daily = date_end_first_day_of_month
-            self._download_data_for_1_ticker(
-                ticker=ticker,
-                date_start=date_start_daily,
-                date_end=date_end,
-                timeperiod_per_file="daily",
-                is_to_update_existing=is_to_update_existing,
-            )
+
+            if date_end != date_end_last_day_of_month and self._data_type != "metrics":
+                self._download_data_for_1_ticker(
+                    ticker=ticker,
+                    date_start=date_start_daily,
+                    date_end=date_end,
+                    timeperiod_per_file="daily",
+                    is_to_update_existing=is_to_update_existing,
+                )
         #####
         # Print statistics
         self._print_dump_statistics()
